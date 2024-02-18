@@ -31,8 +31,10 @@ resource "aws_key_pair" "terraform" {
 
 # ec2 resources. --------------------------------------------------|
 resource "aws_instance" "ubuntu_ec2" {
+  for_each = var.instances
+
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
+  instance_type          = each.value.type
   subnet_id              = aws_subnet.lesson46-public_subnet.id
   key_name               = aws_key_pair.terraform.key_name
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
