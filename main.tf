@@ -17,40 +17,36 @@ data "aws_ami" "ubuntu" {
 }
 
 
-# Security resources. ---------------------------------------------|
-resource "tls_private_key" "terraform" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "terraform" {
-  key_name   = "terraform-key"
-  public_key = tls_private_key.terraform.public_key_openssh
-}
-
 
 # ec2 resources. --------------------------------------------------|
-resource "aws_instance" "ubuntu_ec2" {
+resource "aws_instance" "macedonsky_public" {
   for_each = var.instances
 
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = each.value.type
-  subnet_id              = aws_subnet.lesson46-public_subnet.id
-  key_name               = aws_key_pair.terraform.key_name
-  vpc_security_group_ids = [aws_security_group.allow_ssh.id]
-  tags                   = merge(local.tags, { Name = "${var.name}-public-ec2" })
+  instance_type          = each.value.instance_type
+  vpc_security_group_ids = [aws_security_group.macedonsky-sg[each.key].id]
+  subnet_id              = aws_subnet.terraform_public.id
+  key_name               = "macedonsky-tmp"
+  user_data              = local.user_data[each.key]
+
+  root_block_device {
+    volume_size           = each.value.disk_size
+    volume_type           = "gp2"
+    encrypted             = true
+    delete_on_termination = true
+  }
+  associate_public_ip_address = true
+  tags = {
+    Owner = "macedonsky777"
+    Name  = "macedonsky777"
+  }
 }
 
 
-
-
-
 # Output resources. ------------------------------------------------|
-resource "local_file" "terraform-private-key" {
-  content         = tls_private_key.terraform.private_key_pem
-  filename        = "${path.module}/terraform.pem"
-  file_permission = "0600"
-
+output "instance_public_ip" {
+  description = "Public IP of EC2 instance"
+  value       = [for instance in aws_instance.macedonsky_public : instance.public_ip]
 }
 
 

@@ -1,41 +1,34 @@
 variable "name" {
-  default = "terraform"
+  default = "macedonsky777"
 }
 
-variable "vpc_id" {
-  description = "The ID of the VPC"
-  type        = string
-  default     = "vpc-0baaedc958cb79800"
+variable "ssh_listen_port" {
+  default = 22
 }
-
-variable "is_public" {
-  description = "Associate a public IP address with the instance"
-  type        = bool
-  default     = true
-}
-
-
-
 variable "instances" {
   default = {
     "ec1" = {
-      "disk"     = 10
-      "type"     = "t2.micro"
-      "ssh_port" = 22
-    }
+      disk_size       = 10
+      instance_type   = "t2.micro"
+      ssh_listen_port = 22
+    },
     "ec2" = {
-      "disk"     = 20
-      "type"     = "t2.micro"
-      "ssh_port" = 223311
+      disk_size       = 20
+      instance_type   = "t2.micro"
+      ssh_listen_port = 2222
     }
   }
+  type = map(object({
+    disk_size       = number
+    instance_type   = string
+    ssh_listen_port = number
+  }))
 }
 
 
 locals {
-  tags = {
-    CreateBy    = "Terraform"
-    isEducation = "true"
-  }
+  user_data = { for instance, values in var.instances : instance => templatefile("${path.module}/user_data.sh", {
+    ssh_port = values.ssh_listen_port
+    hostname = var.name
+  }) }
 }
-
